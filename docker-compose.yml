@@ -1,0 +1,52 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: claude-ai-chatbot-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    command: mongod --replSet rs0
+    environment:
+      MONGO_INITDB_DATABASE: ai-chatbot
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./init-replica-set.sh:/docker-entrypoint-initdb.d/init-replica-set.sh
+    networks:
+      - app-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: claude-ai-chatbot-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: "mongodb://mongodb:27017/ai-chatbot?replicaSet=rs0&directConnection=false"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      NEXT_PUBLIC_API_URL: "http://localhost:3000"
+    depends_on:
+      - mongodb
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+
+networks:
+  app-network:
+    driver: bridge
