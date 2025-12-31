@@ -3,11 +3,7 @@
 import { Box } from '@chakra-ui/react'
 import { useEffect, useRef } from 'react'
 import { MessageBubble } from './message-bubble'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
+import { Message } from '@/src/types'
 
 interface MessageListProps {
   messages: Message[]
@@ -54,6 +50,7 @@ export function MessageList({ messages }: MessageListProps) {
             key={idx}
             role={msg.role}
             content={msg.content}
+            images={msg.images}
           />
         ))
       )}

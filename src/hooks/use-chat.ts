@@ -1,11 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-
-interface Message {
-  role: 'user' | 'assistant'
-  content: string
-}
+import { Message, ImageAttachment } from '@/src/types'
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -13,11 +9,16 @@ export function useChat() {
   const [conversationId, setConversationId] = useState<string | null>(null)
 
   const sendMessage = useCallback(
-    async (message: string) => {
+    async (message: string, images?: ImageAttachment[]) => {
       if (!message.trim()) return
 
       // Add user message to the list
-      setMessages((prev) => [...prev, { role: 'user', content: message }])
+      const userMessage: Message = {
+        role: 'user',
+        content: message,
+        images: images?.map((img) => `data:${img.type};base64,${img.data}`),
+      }
+      setMessages((prev) => [...prev, userMessage])
       setIsLoading(true)
 
       try {
@@ -41,6 +42,7 @@ export function useChat() {
           body: JSON.stringify({
             conversationId: currentConversationId,
             message,
+            images: images?.map((img) => ({ data: img.data, type: img.type })),
           }),
         })
 

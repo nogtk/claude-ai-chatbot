@@ -8,9 +8,10 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as {
       conversationId?: string
       message: string
+      images?: Array<{ data: string; type: string }>
     }
 
-    const { conversationId, message } = body
+    const { conversationId, message, images = [] } = body
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -50,11 +51,13 @@ export async function POST(request: NextRequest) {
     }
 
     // ユーザーメッセージを保存
+    const imageDataArray = images.map((img) => `data:${img.type};base64,${img.data}`)
     try {
       await prisma.message.create({
         data: {
           role: 'user',
           content: message,
+          images: imageDataArray,
           conversationId: conversation.id,
         },
       })
@@ -66,7 +69,22 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const response = await chatAgent.stream(message)
+          // マルチモーダルコンテンツの準備
+          const response = images.length > 0
+            ? await chatAgent.stream([
+                {
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: message },
+                    ...images.map((img) => ({
+                      type: 'image',
+                      image: `data:${img.type};base64,${img.data}`,
+                      mimeType: img.type,
+                    })),
+                  ],
+                },
+              ])
+            : await chatAgent.stream(message)
 
           let fullText = ''
           for await (const chunk of response.textStream) {

@@ -21,6 +21,7 @@ model Message {
   id             String       @id @default(auto()) @map("_id") @db.ObjectId
   role           String       // "user" | "assistant"
   content        String
+  images         String[]     @default([])  // Array of base64 encoded images or URLs
   createdAt      DateTime     @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   conversationId String       @db.ObjectId
