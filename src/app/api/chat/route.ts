@@ -70,27 +70,21 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           // マルチモーダルコンテンツの準備
-          let agentInput: string | Array<{ type: string; text?: string; source?: any }>
-
-          if (images.length > 0) {
-            // 画像がある場合はコンテンツ配列形式
-            agentInput = [
-              { type: 'text', text: message },
-              ...images.map((img) => ({
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: img.type,
-                  data: img.data,
+          const response = images.length > 0
+            ? await chatAgent.stream([
+                {
+                  role: 'user',
+                  content: [
+                    { type: 'text', text: message },
+                    ...images.map((img) => ({
+                      type: 'image',
+                      image: `data:${img.type};base64,${img.data}`,
+                      mimeType: img.type,
+                    })),
+                  ],
                 },
-              })),
-            ]
-          } else {
-            // テキストのみの場合
-            agentInput = message
-          }
-
-          const response = await chatAgent.stream(agentInput as any)
+              ])
+            : await chatAgent.stream(message)
 
           let fullText = ''
           for await (const chunk of response.textStream) {
