@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
                 {
                   role: 'user',
                   content: [
-                    { type: 'text', text: message },
+                    { type: 'text' as const, text: message },
                     ...images.map((img) => ({
-                      type: 'image',
+                      type: 'image' as const,
                       image: `data:${img.type};base64,${img.data}`,
                       mimeType: img.type,
                     })),
